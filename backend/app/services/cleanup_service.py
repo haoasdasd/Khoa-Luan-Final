@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from snowflake.snowpark import Session
+from sqlalchemy.orm import Session
 from app.models.post import Post
 
 def cleanup_trash(db: Session):

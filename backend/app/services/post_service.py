@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from typing import Optional, List
 
-from sympy import limit
 from app.repositories.post_repository import PostRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.interaction_repository import InteractionRepository

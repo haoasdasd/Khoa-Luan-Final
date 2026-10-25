@@ -8,7 +8,6 @@ from typing import Optional, List
 from uuid import UUID
 from sqlalchemy import desc, func, literal_column, not_, or_, text
 from sqlalchemy.orm import Session
-from sympy import limit
 from app.models.user import User, Follow, BlockedUser
 
 class UserRepository:

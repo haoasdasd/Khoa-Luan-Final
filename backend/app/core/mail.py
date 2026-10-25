@@ -1,6 +1,6 @@
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from app.core.config import settings
-from pathlib import Path
+from fastapi import HTTPException
 
 # Cấu hình kết nối
 conf = ConnectionConfig(
@@ -16,11 +16,14 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=True,
     # Chỉnh sửa ở đây: Nếu không dùng template file thì để None hoặc xóa hẳn dòng này
     TEMPLATE_FOLDER=None 
-)
+) if all((settings.MAIL_USERNAME, settings.MAIL_PASSWORD, settings.MAIL_FROM)) else None
 
-fastmail = FastMail(conf)
+fastmail = FastMail(conf) if conf is not None else None
 
 async def send_otp_email(email_to: str, otp_code: str):
+    if fastmail is None:
+        raise HTTPException(status_code=503, detail="Email service is not configured")
+
     # Nội dung HTML gửi đi
     html = f"""
     <div style="font-family: sans-serif; border: 1px solid #eee; padding: 20px; border-radius: 10px;">

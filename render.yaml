@@ -21,22 +21,6 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-      - key: MAIL_FROM
-        sync: false
-      - key: MAIL_SERVER
-        sync: false
-      - key: MAIL_PORT
-        value: "587"
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
 
 databases:
   - name: khoa-luan-db

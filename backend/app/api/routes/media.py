@@ -10,6 +10,7 @@ from app.api.deps import get_current_user
 from app.repositories.media_repository import MediaRepository
 from app.schemas.media_schema import MediaUploadRequest, MediaResponse
 from app.models.user import User
+from app.core.config import settings
 
 # Khởi tạo logger
 logger = logging.getLogger(__name__)
@@ -21,6 +22,9 @@ async def upload_file(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
+    if not all((settings.CLOUDINARY_CLOUD_NAME, settings.CLOUDINARY_API_KEY, settings.CLOUDINARY_API_SECRET)):
+        await file.close()
+        raise HTTPException(status_code=503, detail="Media upload service is not configured")
     # 1. Kiểm tra định dạng file
     if not file.content_type.startswith(("image/", "video/")):
         raise HTTPException(status_code=400, detail="Định dạng file không hợp lệ")

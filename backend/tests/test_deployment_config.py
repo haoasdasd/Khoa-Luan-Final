@@ -1,6 +1,7 @@
 """Configuration and CORS regression tests; no external services are contacted."""
 
 import importlib
+import asyncio
 import os
 import secrets
 import unittest
@@ -36,6 +37,23 @@ class DeploymentConfigTests(unittest.TestCase):
 
     def test_cors_origins_are_loaded_from_json(self):
         self.assertEqual(self.config.Settings().CORS_ORIGINS, ["https://frontend.example.com"])
+
+    def test_external_integrations_can_be_unconfigured(self):
+        settings = self.config.Settings(
+            _env_file=None, MAIL_USERNAME=None, MAIL_PASSWORD=None, MAIL_FROM=None,
+            CLOUDINARY_CLOUD_NAME=None, CLOUDINARY_API_KEY=None, CLOUDINARY_API_SECRET=None,
+        )
+        self.assertIsNone(settings.MAIL_PASSWORD)
+        self.assertIsNone(settings.CLOUDINARY_API_SECRET)
+
+    def test_unconfigured_email_returns_service_unavailable(self):
+        from fastapi import HTTPException
+        from app.core import mail
+
+        with patch.object(mail, "fastmail", None):
+            with self.assertRaises(HTTPException) as error:
+                asyncio.run(mail.send_otp_email("test@example.com", "1234"))
+        self.assertEqual(error.exception.status_code, 503)
 
     def test_allowed_frontend_origin_receives_cors_headers(self):
         from fastapi.testclient import TestClient

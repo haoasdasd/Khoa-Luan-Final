@@ -38,17 +38,17 @@ class Settings(BaseSettings):
     ]
     
     # ===== Mail Config =====
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
+    MAIL_USERNAME: str | None = None
+    MAIL_PASSWORD: str | None = None
+    MAIL_FROM: str | None = None
     MAIL_PORT: int = 587
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_FROM_NAME: str = "Social Network"
 
     # ===== Cloudinary Config =====
-    CLOUDINARY_CLOUD_NAME: str = "SocialNetwork"
-    CLOUDINARY_API_KEY: str
-    CLOUDINARY_API_SECRET: str
+    CLOUDINARY_CLOUD_NAME: str | None = None
+    CLOUDINARY_API_KEY: str | None = None
+    CLOUDINARY_API_SECRET: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

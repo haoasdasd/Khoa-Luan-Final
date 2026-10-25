@@ -6,8 +6,13 @@ Create a Blueprint from `https://github.com/haoasdasd/Khoa-Luan-Final`, branch
 `main`, using the root `render.yaml`. Review the selected plans before creating
 resources. The Blueprint creates a Python API and PostgreSQL in Singapore.
 
-Supply real values for the `sync: false` entries in Render's secure environment
-settings. Do not commit `.env` files or paste credentials in chat.
+Supply `CORS_ORIGINS` during Blueprint creation. Add any optional integration
+credentials in the Render service's secure environment settings when available.
+Do not commit `.env` files or paste credentials in chat.
+
+For a deployment without external integrations, omit the email and Cloudinary
+variables. Authentication and text chat can run independently; email and backend
+media uploads return HTTP 503 until their credentials are configured.
 
 - `CORS_ORIGINS`: JSON array of exact frontend origins, for example
   `["https://your-project.vercel.app"]`. Include a custom domain separately if used.

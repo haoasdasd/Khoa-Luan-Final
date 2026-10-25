@@ -12,16 +12,16 @@ interface UseConversationsReturn {
   prepend:       (conv: ApiConversation) => void
 }
 
-export function useConversations(p0: boolean): UseConversationsReturn {
+export function useConversations(isAccepted: boolean): UseConversationsReturn {
   const [conversations, setConversations] = useState<ApiConversation[]>([])
   const [loading,       setLoading]       = useState(true)
 
   useEffect(() => {
-    chatResource.conversations()
+    chatResource.conversations(isAccepted)
       .then(cs => setConversations(cs))
       .catch(() => { /* ignore */ })
       .finally(() => setLoading(false))
-  }, [])
+  }, [isAccepted])
 
 const create = useCallback(async (payload: ApiCreateConversationPayload) => {
   const conv = await chatResource.create({

@@ -1,4 +1,3 @@
-import React from "react";
 
 interface StatsProps {
   followers: number;
@@ -6,7 +5,7 @@ interface StatsProps {
   postsCount: number;
 }
 
-export const ProfileFollowStats = ({ followers, following, postsCount }: StatsProps) => {
+export const ProfileFollowStats = ({ followers, following }: StatsProps) => {
   const stats = [
     { label: "Người theo dõi", value: followers },
     { label: "Đang theo dõi", value: following },

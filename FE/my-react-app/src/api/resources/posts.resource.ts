@@ -5,6 +5,7 @@
 import { authorizedFetch } from "@/api/interceptors/auth.interceptor";
 import type {
   ApiPost,
+  ApiHiddenItem,
   ApiCreatePostPayload,
   ApiUpdatePostPayload,
 } from "@/types/api";
@@ -59,7 +60,7 @@ export const postsResource = {
     return authorizedFetch(`/posts/${postId}`, { method: "DELETE" });
   },
 
-  like(postId: string, payload: { type: string }): Promise<any> {
+  like(postId: string, payload: { type: string }): Promise<ApiPost> {
     return authorizedFetch(`/posts/${postId}/like`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -98,7 +99,7 @@ export const postsResource = {
   // 1. Lấy danh sách nội dung đã ẩn (Archive)
   // Hào nhớ check Backend xem path là /posts/hidden/archive hay /posts/archive nhé
   getArchive({ offset = 0, limit = 20 }: PaginationParams = {}): Promise<
-    any[]
+    ApiHiddenItem[]
   > {
     return authorizedFetch(
       `/posts/hidden/archive?offset=${offset}&limit=${limit}`,
@@ -106,7 +107,7 @@ export const postsResource = {
   },
 
   // 2. Hàm HIỆN LẠI (Unhide) - Fix dứt điểm lỗi TypeScript
-  unhide(targetId: string, targetType: string = "post"): Promise<any> {
+  unhide(targetId: string, targetType: string = "post"): Promise<{ message: string }> {
     // Truyền target_type qua query string để khớp với logic Backend (target_type: str)
     return authorizedFetch(
       `/posts/${targetId}/unhide?target_type=${targetType}`,

@@ -1,3 +1,4 @@
+import type { InfiniteData } from "@tanstack/react-query";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { postsResource } from "@/api";
 import type { ApiPost } from "@/types/api";
@@ -35,7 +36,7 @@ export function useFeed() {
 
   // Thêm bài viết mới lên đầu bảng tin mà không cần load lại trang
   const prependPost = (newPost: ApiPost) => {
-    queryClient.setQueryData(["feed"], (oldData: any) => {
+    queryClient.setQueryData(["feed"], (oldData: InfiniteData<ApiPost[], number> | undefined) => {
       // Nếu chưa có data (do chưa load feed lần nào), tạo trang đầu tiên chứa bài viết mới
       if (!oldData || !oldData.pages) {
         return {
@@ -55,7 +56,7 @@ export function useFeed() {
 
   // Xóa bài viết khỏi cache
   const removePostById = (postId: string) => {
-    queryClient.setQueryData(["feed"], (oldData: any) => {
+    queryClient.setQueryData(["feed"], (oldData: InfiniteData<ApiPost[], number> | undefined) => {
       if (!oldData) return oldData;
       return {
         ...oldData,
@@ -68,14 +69,14 @@ export function useFeed() {
 
   // Cập nhật một bài viết (ví dụ: cập nhật like_count)
   const updatePostById = (postId: string, patch: Partial<ApiPost>) => {
-    queryClient.setQueryData(["feed"], (oldData: any) => {
+    queryClient.setQueryData(["feed"], (oldData: InfiniteData<ApiPost[], number> | undefined) => {
       if (!oldData) return oldData;
       return {
         ...oldData,
         pages: oldData.pages.map((page: ApiPost[]) =>
           page.map((post) => 
             post.id === postId 
-              ? { ...post, ...patch, ...((patch as any).top_reactions ? {} : { top_reactions: post.top_reactions || [] }) } 
+              ? { ...post, ...patch, ...(patch.top_reactions ? {} : { top_reactions: post.top_reactions || [] }) }
               : post
           )
         ),

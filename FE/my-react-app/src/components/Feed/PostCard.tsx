@@ -17,7 +17,6 @@ export function PostCard({
   isSharedChild = false,
 }: {
   post: ApiPost;
-  onSave: () => void;
   isSharedChild?: boolean;
 }) {
   const { user } = useAuth();
@@ -40,8 +39,6 @@ export function PostCard({
     savePost,
     unsavePost,
     deletePost,
-    isSharing,
-    isLiking,
   } = usePostActions();
 
   const {
@@ -106,7 +103,7 @@ export function PostCard({
     }
 
     // 3. Gọi hàm tạo comment
-    await addComment({ content: commentText, media_url: finalUrl } as any);
+    await addComment({ content: commentText, media_url: finalUrl });
     
     // 4. Xóa form sau khi thành công
     setCommentText("");
@@ -254,7 +251,7 @@ export function PostCard({
                         onDelete={deleteComment}
                         onUpdate={(id: string, content: string) => updateComment({ id, content })}
                         onReply={(pid: string, content: string, media_url?: string) =>
-                          addComment({ content, parent_id: pid, media_url } as any)
+                          addComment({ content, parent_id: pid, media_url })
                         }
                         onReact={(commentId: string, type: string) => reactComment({ commentId, type })}
                         onHide={hideComment}

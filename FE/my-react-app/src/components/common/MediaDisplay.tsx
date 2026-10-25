@@ -12,7 +12,6 @@ export const MediaDisplay = ({
   url,
   context = "post",
   className = "",
-  isSharedChild,
 }: MediaDisplayProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);

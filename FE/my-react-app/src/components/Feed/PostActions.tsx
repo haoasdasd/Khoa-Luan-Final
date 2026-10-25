@@ -1,3 +1,6 @@
+import type { ApiPost } from "@/types/api";
+import type { ReactionOption } from "@/types/ui";
+
 import {
   ThumbsUp,
   MessageCircle,
@@ -8,11 +11,24 @@ import {
 } from "lucide-react";
 import { REACTION_OPTIONS } from "@/constants/reactions.constants";
 
+interface PostActionsProps {
+  post: ApiPost;
+  isLiking?: boolean;
+  isSharing?: boolean;
+  currentReaction: ReactionOption;
+  reactionColor: string;
+  likedAnimation?: boolean;
+  onLike: () => void;
+  onReaction: (label: string) => void;
+  onToggleComments: () => void;
+  onShare: () => void;
+  onSave: () => void;
+}
+
 export const PostActions = ({
   post,
   isLiking,
   isSharing,
-  isSaved,
   currentReaction,
   reactionColor,
   likedAnimation,
@@ -21,7 +37,7 @@ export const PostActions = ({
   onToggleComments,
   onShare,
   onSave,
-}: any) => {
+}: PostActionsProps) => {
   return (
     <div className="px-2 py-1 flex items-center gap-1 border-t border-slate-100">
       {/* Nút Like & Reaction Picker */}

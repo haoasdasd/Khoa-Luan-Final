@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { ProfileHeader } from "@/components/Profile/ProfileHeader";
 import { ProfileFollowStats } from "@/components/Profile/ProfileFollowStats";
@@ -53,21 +53,17 @@ export default function ProfilePage() {
 
   // --- Hóa giải dữ liệu ---
   const userPosts = useMemo(() => {
-    return Array.isArray(userPostsData)
-      ? userPostsData
-      : (userPostsData as any)?.data || [];
+    return userPostsData ?? [];
   }, [userPostsData]);
 
   const friendsList = useMemo(() => {
-    return Array.isArray(friendsData)
-      ? friendsData
-      : (friendsData as any)?.data || [];
+    return friendsData ?? [];
   }, [friendsData]);
 
   const recentMedia = useMemo(() => {
     return userPosts
-      .map((p: any) => p.media_url || p.shared_post?.media_url)
-      .filter((url: string) => !!url)
+      .map((p) => p.media_url || p.shared_post?.media_url)
+      .filter((url): url is string => !!url)
       .slice(0, 6);
   }, [userPosts]);
 
@@ -84,7 +80,7 @@ export default function ProfilePage() {
       </div>
     );
 
-  if (!profileData)
+  if (!profileData || !displayUser)
     return (
       <div className="py-20 text-center">
         <h2 className="text-2xl font-bold text-slate-800">404</h2>
@@ -223,13 +219,13 @@ export default function ProfilePage() {
               {activeTab === "media" && (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in zoom-in-95 duration-500">
                   {userPosts.filter(
-                    (p: any) => p.media_url || p.shared_post?.media_url,
+                    (p) => p.media_url || p.shared_post?.media_url,
                   ).length > 0 ? (
                     userPosts
                       .filter(
-                        (p: any) => p.media_url || p.shared_post?.media_url,
+                        (p) => p.media_url || p.shared_post?.media_url,
                       )
-                      .map((post: any) => {
+                      .map((post) => {
                         // ✅ Xác định URL cuối cùng để hiển thị
                         const finalMediaUrl =
                           post.media_url || post.shared_post?.media_url;
@@ -244,12 +240,12 @@ export default function ProfilePage() {
                           >
                             {isVideo ? (
                               <video
-                                src={finalMediaUrl}
+                                src={finalMediaUrl ?? undefined}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
                               <img
-                                src={finalMediaUrl}
+                                src={finalMediaUrl ?? undefined}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                 alt=""
                               />
@@ -282,7 +278,7 @@ export default function ProfilePage() {
                     </div>
                   ) : friendsList.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {friendsList.map((friend: any) => (
+                      {friendsList.map((friend) => (
                         <div
                           key={friend.id}
                           className="bg-white p-4 rounded-[24px] border border-slate-100 flex items-center justify-between hover:shadow-md transition-all"
@@ -328,7 +324,7 @@ export default function ProfilePage() {
         <EditProfileModal
           user={displayUser}
           onClose={() => setIsEditModalOpen(false)}
-          onSave={async (formData: any) => {
+          onSave={async (formData) => {
             await usersResource.update(formData);
             queryClient.invalidateQueries({
               queryKey: ["profile", targetUsername],

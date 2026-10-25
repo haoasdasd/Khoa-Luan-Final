@@ -4,8 +4,6 @@
  * Business logic for login/logout lives in the service layer, not here.
  */
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
   useCallback,
@@ -14,22 +12,12 @@ import {
 import { usersResource } from "@/api";
 import { authResource } from "@/api";
 import { tokenService } from "@/services/token.service";
+import { AuthContext } from "./auth-context";
 import type { ApiUser } from "@/types/api";
 import { socketInstance } from "@/api/socket.instance";
 import { ROUTES } from "@/config/routes.config";
 
 // ── Context shape ─────────────────────────────────────────────────────────────
-
-interface AuthContextValue {
-  user: ApiUser | null;
-  loading: boolean;
-  refresh: () => Promise<void>;
-  // Đổi từ 2 tham số thành 1 object
-  login: (data: { email: string; password: string }) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
@@ -103,12 +91,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
 }

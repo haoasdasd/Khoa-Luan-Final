@@ -99,7 +99,7 @@ export default function FeedPage() {
             {posts.map((post) => (
               // ID bọc PostCard để phục vụ tính năng Scroll to Post
               <div key={post.id} id={`post-${post.id}`} className="scroll-mt-24 transition-all"> 
-                <PostCard post={post} onSave={() => {}} /> 
+                <PostCard post={post} />
               </div>
             ))}
           </div>

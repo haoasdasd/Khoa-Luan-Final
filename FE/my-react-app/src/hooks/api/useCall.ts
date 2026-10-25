@@ -1,11 +1,12 @@
+import type { CallSignalData } from "@/components/chat/VideoCallModal";
 // hooks/useCall.ts
 import { useState, useCallback } from "react";
 
 export interface UseCallReturn {
   targetUserId: string | null;
-  incomingOffer: any | null;
+  incomingOffer: CallSignalData | null;
   makeCall: (userId: string) => void;
-  receiveCall: (offer: any) => void;
+  receiveCall: (offer: CallSignalData) => void;
   endCall: () => void;
 }
 
@@ -14,7 +15,7 @@ export function useCall(): UseCallReturn {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   
   // Trạng thái khi CÓ NGƯỜI GỌI ĐẾN (Bị động)
-  const [incomingOffer, setIncomingOffer] = useState<any>(null);
+  const [incomingOffer, setIncomingOffer] = useState<CallSignalData | null>(null);
 
   // 1. Nút bấm gọi ai đó (Chỉ cần set ID để hiện Modal)
   const makeCall = useCallback((userId: string) => {
@@ -22,7 +23,7 @@ export function useCall(): UseCallReturn {
   }, []);
 
   // 2. Khi Socket nhận được tín hiệu 'call_offer' từ người khác
-  const receiveCall = useCallback((offer: any) => {
+  const receiveCall = useCallback((offer: CallSignalData) => {
     setIncomingOffer(offer);
   }, []);
 

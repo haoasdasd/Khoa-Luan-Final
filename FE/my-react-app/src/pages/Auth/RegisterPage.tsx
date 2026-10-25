@@ -1,13 +1,10 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/hooks/api/useAuth"
 import { useNavigate, Link } from "react-router-dom"
-import { 
-  Mail, Lock, UserPlus, Sparkles, 
-  ChevronRight, Camera, ImagePlus, Loader2, TextQuote
-} from "lucide-react"
+import { UserPlus, ChevronRight, Camera, ImagePlus, Loader2 } from "lucide-react"
 import AuthLayout from "@/components/Auth/AuthLayout"
-import { uploadImageToCloudinary } from "@/utils/helpers/upload.helpers";
-import { getInitials, getAvatarGradient } from "@/utils/helpers/avatar.helpers";
+import { uploadImageToCloudinary } from "@/utils/helpers/upload.helpers"
+import { getInitials, getAvatarGradient } from "@/utils/helpers/avatar.helpers"
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -24,7 +21,6 @@ export default function RegisterPage() {
   })
   
   const [isLoading, setIsLoading] = useState(false)
-  const [focusedField, setFocusedField] = useState<string | null>(null)
   
   // State xử lý ảnh
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -74,7 +70,7 @@ export default function RegisterPage() {
       
       alert("Đăng ký thành công! Chào mừng bạn gia nhập NTTU.")
       navigate("/auth/login")
-    } catch (error) {
+    } catch {
       alert("Đăng ký lỗi. Vui lòng kiểm tra lại thông tin hoặc ảnh.")
     } finally {
       setIsLoading(false)

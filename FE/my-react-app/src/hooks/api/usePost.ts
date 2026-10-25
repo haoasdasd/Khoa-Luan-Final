@@ -1,3 +1,4 @@
+import type { PostCache } from "@/types/post-cache";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postsResource } from "@/api";
 import type { ApiPost } from "@/types/api";
@@ -14,9 +15,9 @@ export function usePostActions() {
 
     onMutate: async ({ postId, type }) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
 
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
 
         const updateLogic = (p: ApiPost) => {
@@ -40,7 +41,7 @@ export function usePostActions() {
           };
         };
 
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.map(updateLogic)),
@@ -52,7 +53,7 @@ export function usePostActions() {
     },
 
     onSuccess: (updatedPostFromServer, variables) => {
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
 
         const updateLogic = (p: ApiPost) => {
@@ -71,7 +72,7 @@ export function usePostActions() {
           return p;
         };
 
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.map(updateLogic)),
@@ -93,7 +94,7 @@ export function usePostActions() {
     mutationFn: (postId: string) => postsResource.unlike(postId),
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
 
       const logic = (p: ApiPost) =>
         p.id === postId
@@ -105,9 +106,9 @@ export function usePostActions() {
             }
           : p;
 
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
-        if (old.pages)
+        if (!Array.isArray(old))
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.map(logic)),
@@ -126,22 +127,22 @@ export function usePostActions() {
 
     onMutate: async ({ postId, content }) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
 
-      const findPostInCache = (oldData: any): ApiPost | undefined => {
+      const findPostInCache = (oldData: PostCache | undefined): ApiPost | undefined => {
         if (!oldData) return undefined;
         const targetId = String(postId).toLowerCase();
         let found: ApiPost | undefined;
-        if (oldData.pages) {
+        if (!Array.isArray(oldData)) {
           for (const page of oldData.pages) {
             found = page.find(
-              (p: any) => String(p.id).toLowerCase() === targetId,
+              (p: ApiPost) => String(p.id).toLowerCase() === targetId,
             );
             if (found) break;
           }
         } else if (Array.isArray(oldData)) {
           found = oldData.find(
-            (p: any) => String(p.id).toLowerCase() === targetId,
+            (p: ApiPost) => String(p.id).toLowerCase() === targetId,
           );
         }
         return found;
@@ -173,9 +174,9 @@ export function usePostActions() {
         shared_post: originalPost ? { ...originalPost } : null,
       };
 
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           const newPages = [...old.pages];
           newPages[0] = [optimisticShare, ...newPages[0]];
           return { ...old, pages: newPages };
@@ -186,13 +187,13 @@ export function usePostActions() {
       return { previousFeed, tempId: optimisticShare.id };
     },
 
-    onSuccess: (realPost, variables, context) => {
-      queryClient.setQueryData(["feed"], (old: any) => {
+    onSuccess: (realPost, _variables, context) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
         const updateId = (p: ApiPost) =>
           p.id === context?.tempId ? realPost : p;
 
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.map(updateId)),
@@ -214,12 +215,12 @@ export function usePostActions() {
     mutationFn: (postId: string) => postsResource.hide(postId),
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
       const removeLogic = (p: ApiPost) => p.id !== postId;
 
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.filter(removeLogic)),
@@ -232,46 +233,16 @@ export function usePostActions() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["feed"] }),
   });
 
-// --- 4. HIDE & SAVE MUTATIONS ---
-  
-  // Hàm dùng chung để cập nhật trạng thái is_saved trong Cache cho cả 2 trang Feed và Saved
-  const updateSaveStatusInCache = (postId: string, isSaved: boolean) => {
-    // 1. Cập nhật is_saved trong Query "feed" (Trang chủ/Cá nhân)
-    queryClient.setQueryData(["feed"], (old: any) => {
-      if (!old) return old;
-      const logic = (p: ApiPost) => p.id === postId ? { ...p, is_saved: isSaved } : p;
-      if (old.pages) {
-        return { ...old, pages: old.pages.map((page: ApiPost[]) => page.map(logic)) };
-      }
-      return Array.isArray(old) ? old.map(logic) : old;
-    });
-
-    // 2. Cập nhật is_saved trong Query "saved-posts" (Trang danh sách đã lưu)
-    queryClient.setQueryData(["saved-posts"], (old: any) => {
-      if (!old) return old;
-      // Nếu là bỏ lưu (unsave), thì xóa bài viết đó khỏi danh sách Saved luôn cho chuyên nghiệp
-      if (!isSaved) {
-        const filterLogic = (p: ApiPost) => p.id !== postId;
-        if (old.pages) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.filter(filterLogic)) };
-        return Array.isArray(old) ? old.filter(filterLogic) : old;
-      }
-      // Nếu là lưu (save), cập nhật trạng thái
-      const updateLogic = (p: ApiPost) => p.id === postId ? { ...p, is_saved: true } : p;
-      if (old.pages) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.map(updateLogic)) };
-      return Array.isArray(old) ? old.map(updateLogic) : old;
-    });
-  };
-
 // --- MUTATION SAVE (LƯU BÀI VIẾT) ---
 const saveMutation = useMutation({
     mutationFn: (postId: string) => postsResource.save(postId),
     onMutate: async (postId) => {
       // Hủy mọi request để tránh dữ liệu cũ đè dữ liệu mới
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
 
       // 🔥 ÉP ĐỔI MÀU TRONG RAM
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
         const updateLogic = (p: ApiPost) => {
           // Nếu bài này trùng ID, hoặc bài này là bài share chứa bài gốc trùng ID
@@ -280,15 +251,15 @@ const saveMutation = useMutation({
           return p;
         };
 
-        if (old.pages) {
-          return { ...old, pages: old.pages.map((page: any) => page.map(updateLogic)) };
+        if (!Array.isArray(old)) {
+          return { ...old, pages: old.pages.map((page: ApiPost[]) => page.map(updateLogic)) };
         }
         return Array.isArray(old) ? old.map(updateLogic) : old;
       });
 
       return { previousFeed };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previousFeed) queryClient.setQueryData(["feed"], context.previousFeed);
     }
   });
@@ -300,23 +271,23 @@ const saveMutation = useMutation({
       await queryClient.cancelQueries({ queryKey: ["feed"] });
       await queryClient.cancelQueries({ queryKey: ["saved-posts"] });
 
-      const previousFeed = queryClient.getQueryData(["feed"]);
-      const previousSaved = queryClient.getQueryData(["saved-posts"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
+      const previousSaved = queryClient.getQueryData<PostCache>(["saved-posts"]);
 
       // 🔥 CẬP NHẬT RAM: Bỏ lưu
       // 1. Ở Feed: Chỉ đổi icon sang xám
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
         const logic = (p: ApiPost) => p.id === postId ? { ...p, is_saved: false } : p;
-        if (old.pages) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.map(logic)) };
+        if (!Array.isArray(old)) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.map(logic)) };
         return Array.isArray(old) ? old.map(logic) : old;
       });
 
       // 2. Ở trang Saved: Xóa bài viết khỏi danh sách hiển thị luôn
-      queryClient.setQueryData(["saved-posts"], (old: any) => {
+      queryClient.setQueryData(["saved-posts"], (old: PostCache | undefined) => {
         if (!old) return old;
         const filterLogic = (p: ApiPost) => p.id !== postId;
-        if (old.pages) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.filter(filterLogic)) };
+        if (!Array.isArray(old)) return { ...old, pages: old.pages.map((page: ApiPost[]) => page.filter(filterLogic)) };
         return Array.isArray(old) ? old.filter(filterLogic) : old;
       });
 
@@ -332,12 +303,12 @@ const saveMutation = useMutation({
     mutationFn: (postId: string) => postsResource.delete(postId),
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["feed"] });
-      const previousFeed = queryClient.getQueryData(["feed"]);
+      const previousFeed = queryClient.getQueryData<PostCache>(["feed"]);
       const filterLogic = (p: ApiPost) => p.id !== postId;
 
-      queryClient.setQueryData(["feed"], (old: any) => {
+      queryClient.setQueryData(["feed"], (old: PostCache | undefined) => {
         if (!old) return old;
-        if (old.pages) {
+        if (!Array.isArray(old)) {
           return {
             ...old,
             pages: old.pages.map((page: ApiPost[]) => page.filter(filterLogic)),

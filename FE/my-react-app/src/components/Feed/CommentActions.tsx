@@ -1,6 +1,17 @@
+import type { ApiComment } from "@/types/api";
+
 import { REACTION_BY_LABEL, REACTION_OPTIONS } from "@/constants/reactions.constants";
 import { formatRelative } from "@/utils/format/date.utils";
 import { ThumbsUp } from "lucide-react";
+
+interface CommentActionsProps {
+  comment: ApiComment;
+  onReact: (id: string, type: string) => void;
+  toggleReply: () => void;
+  isReplying: boolean;
+  showReactions: boolean;
+  setShowReactions: (show: boolean) => void;
+}
 
 export const CommentActions = ({ 
   comment, 
@@ -9,7 +20,7 @@ export const CommentActions = ({
   isReplying, 
   showReactions, 
   setShowReactions 
-}: any) => (
+}: CommentActionsProps) => (
   <div className="flex items-center gap-4 mt-1 ml-1">
     <span className="text-[10px] text-slate-400 font-medium lowercase">
       {formatRelative(comment.created_at)}
@@ -30,7 +41,7 @@ export const CommentActions = ({
               : "#64748b" 
           }}
         >
-          {comment.is_liked ? REACTION_BY_LABEL[comment.reaction_type?.toLowerCase()]?.label : "Thích"}
+          {comment.is_liked ? REACTION_BY_LABEL[comment.reaction_type?.toLowerCase() || "like"]?.label : "Thích"}
         </button>
 
         {showReactions && (

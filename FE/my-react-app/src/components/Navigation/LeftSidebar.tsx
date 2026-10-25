@@ -4,7 +4,6 @@ import {
 } from "@/constants/navigation.constants";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/api/useAuth";
-import { getInitials, getAvatarGradient } from "@/utils/helpers/avatar.helpers";
 import { UserAvatar } from "../common/UserAvatar";
 import { ROUTES } from "@/config/routes.config";
 

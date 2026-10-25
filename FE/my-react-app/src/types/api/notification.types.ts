@@ -2,7 +2,6 @@
  * types/api/notification.types.ts
  */
 
-import type { ReactNode } from "react";
 
 export type NotificationType =
   | 'like'
@@ -15,7 +14,7 @@ export type NotificationType =
   | 'friend_request'
 
 export interface ApiNotification {
-  content: ReactNode;
+  content: string | null;
   sender: { full_name?: string | null | undefined; username?: string | null | undefined; avatar_url?: string | null | undefined } | null | undefined
   id: string
   user_id: string

@@ -4,7 +4,7 @@
  */
 import type React from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth }  from '@/context/AuthContext'
+import { useAuth }  from '@/context/auth-context'
 import { ROUTES }   from '@/config/routes.config'
 
 export function GuestRoute({ children }: { children: React.ReactNode }) {
@@ -29,4 +29,3 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!user) return <Navigate to={ROUTES.AUTH} replace />;
   return <>{children}</>;
 }
-

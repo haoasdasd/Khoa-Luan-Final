@@ -1,11 +1,19 @@
+import type { ApiUser, ApiUpdateUserPayload } from "@/types/api";
+
 import { useToast } from "@/hooks/api/useToast";
-import { X, Save, Loader2 } from "lucide-react";
+import { X, Save } from "lucide-react";
 import { useState } from "react";
 
-export function EditProfileModal({ user, onClose, onSave }: any) {
+interface EditProfileModalProps {
+  user: ApiUser;
+  onClose: () => void;
+  onSave: (payload: ApiUpdateUserPayload) => Promise<void>;
+}
+
+export function EditProfileModal({ user, onClose, onSave }: EditProfileModalProps) {
   const [formData, setFormData] = useState({
-    full_name: user.full_name,
-    bio: user.bio,
+    full_name: user.full_name ?? "",
+    bio: user.bio ?? "",
     // avatar_url, cover_url...
   });
   const { show } = useToast();
@@ -15,7 +23,7 @@ export function EditProfileModal({ user, onClose, onSave }: any) {
       await onSave(formData);
       show("Cập nhật thông tin thành công!", "success");
       onClose();
-    } catch (err) {
+    } catch {
       show("Không thể lưu thay đổi", "error");
     }
   };

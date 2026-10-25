@@ -47,9 +47,9 @@ function buildHeaders(extra: Record<string, string> = {}): Record<string, string
 
 export class ApiError extends Error {
   public readonly status: number
-  public readonly detail: any // Đổi thành any để chứa được Object lỗi từ FastAPI
+  public readonly detail: unknown // Đổi thành any để chứa được Object lỗi từ FastAPI
 
-  constructor(status: number, detail: any) {
+  constructor(status: number, detail: unknown) {
     super(typeof detail === 'string' ? detail : 'API Error')
     this.name = 'ApiError'
     this.status = status

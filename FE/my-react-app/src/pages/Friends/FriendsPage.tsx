@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, Users, UserPlus, Loader2, SearchX, UserCheck, Sparkles, MessageCircle } from "lucide-react";
+import type { ApiUserPublic } from "@/types/api";
+
+import { useState } from "react";
+import { Search, Loader2, SearchX, MessageCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { usersResource } from "@/api/resources/users.resource";
 import { UserAvatar } from "@/components/common/UserAvatar";
@@ -85,7 +87,7 @@ export default function FriendsPage() {
 }
 
 // THẺ NGƯỜI DÙNG: Ngang, đơn giản, tập trung vào Avatar và Tên
-function FriendCard({ user, action, onAction, isProcessing }: any) {
+function FriendCard({ user, action, onAction, isProcessing }: { user: ApiUserPublic; action: "view" | "profile" | "follow"; onAction?: () => void; isProcessing?: boolean }) {
   return (
     <div className="group bg-white p-4 rounded-2xl border border-slate-100 flex items-center hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-300">
       <Link to={`/profile/${user.username}`} className="flex items-center gap-4 flex-1">
@@ -132,7 +134,7 @@ function FriendCard({ user, action, onAction, isProcessing }: any) {
   );
 }
 
-function TabBtn({ active, onClick, label }: any) {
+function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button 
       onClick={onClick} 
@@ -149,7 +151,7 @@ function LoadingList() {
   return <>{[1, 2, 3].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl" />)}</>;
 }
 
-function EmptyState({ text }: any) {
+function EmptyState({ text }: { text: string }) {
   return (
     <div className="py-20 text-center">
       <SearchX className="mx-auto text-slate-200 mb-4" size={48} />

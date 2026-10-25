@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, memo } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { PhoneOff, Phone, X, Video, VideoOff, Mic, MicOff, RefreshCcw } from "lucide-react";
 import type { ChatSocketClient } from "@/api/ws.client";
 import callResource from "@/api/resources/call.api";
@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/api/useAuth";
 import { UserAvatar } from "@/components/common/UserAvatar";
 
 export interface CallSignalData {
-  call_id: string;
+  call_id?: string;
   from_user_id: string;
   from_user_name?: string;
   conversation_id: string;
@@ -98,6 +98,7 @@ export const VideoCallModal = memo(
       setRemoteStream(null);
       localStreamRef.current = null;
       
+      candidateQueue.current = [];
       isStarted.current = false;
       isCleaningUp.current = false;
     }, []);
@@ -111,7 +112,7 @@ export const VideoCallModal = memo(
         socket.send({
           event: !isAccepted && offer ? "call_rejected" : "call_hangup",
           data: { to_user_id: remoteId, conversation_id: currentConvId },
-        } as any);
+        });
       }
       onHangup();
     }, [socket, offer, targetUserId, onHangup, isAccepted, convId, cleanupResources]);
@@ -122,152 +123,152 @@ export const VideoCallModal = memo(
       handleHangupRef.current = handleHangup;
     }, [handleHangup]);
 
-    const initWebRTC = useCallback(async () => {
-      if (isStarted.current || isCleaningUp.current || !socket) return;
-      isStarted.current = true;
-      const isStillMounted = { current: true };
+    const callerName = user?.full_name;
+    useEffect(() => {
+      if (offer && !isAccepted) return;
+      let disposed = false;
+      let unsubscribe: (() => void) | undefined;
+      const initWebRTC = async () => {
+        if (isStarted.current || isCleaningUp.current || !socket || !(offer?.conversation_id || convId)) return;
+        isStarted.current = true;
 
-      const pc = new RTCPeerConnection(ICE_CONFIG);
-      pcRef.current = pc;
 
-      pc.onicecandidate = (e) => {
-        const remoteId = offer ? offer.from_user_id : targetUserId;
-        if (e.candidate && socket && remoteId && (pc.signalingState as string) !== "closed") {
-          socket.send({
-            event: "ice_candidate",
-            data: { to_user_id: remoteId, signal_data: e.candidate.toJSON() },
-          } as any);
-        }
-      };
+        const pc = new RTCPeerConnection(ICE_CONFIG);
+        pcRef.current = pc;
 
-      pc.ontrack = (e) => {
-        if (isStillMounted.current) setRemoteStream(e.streams[0]);
-      };
-
-      const unsub = socket.on(async (event: any) => {
-        if (!pcRef.current || pcRef.current.signalingState === "closed") return;
-
-        if (event.event === "ice_candidate") {
-          const candidateData = event.data?.signal_data || event.data;
-          if (pcRef.current.remoteDescription) {
-            pcRef.current.addIceCandidate(new RTCIceCandidate(candidateData)).catch((e) => console.warn(e));
-          } else {
-            candidateQueue.current.push(candidateData);
-          }
-        }
-
-        if (event.event === "call_answer") {
-          try {
-            const answerSignal = event.data?.signal_data || event.data;
-            await pcRef.current.setRemoteDescription(new RTCSessionDescription(answerSignal));
-            
-            // Xả hàng đợi có kiểm tra trạng thái an toàn
-            candidateQueue.current.forEach((cand) => {
-              if (pcRef.current && pcRef.current.signalingState !== "closed") {
-                pcRef.current.addIceCandidate(new RTCIceCandidate(cand)).catch((e) => console.warn(e));
-              }
+        pc.onicecandidate = (e) => {
+          const remoteId = offer ? offer.from_user_id : targetUserId;
+          if (e.candidate && socket && remoteId && (pc.signalingState as string) !== "closed") {
+            socket.send({
+              event: "ice_candidate",
+              data: { to_user_id: remoteId, conversation_id: offer?.conversation_id || convId || "", signal_data: e.candidate.toJSON() },
             });
-            candidateQueue.current = [];
-          } catch (e) {
-            console.error("Lỗi setRemoteDescription:", e);
           }
-        }
-      });
+        };
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        pc.ontrack = (e) => {
+          if (!disposed) setRemoteStream(e.streams[0]);
+        };
 
-        if (!isStillMounted.current || !pcRef.current || (pcRef.current.signalingState as string) === "closed") {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
+        unsubscribe = socket.on(async (event) => {
+          if (disposed || pc.signalingState === "closed") return;
+          if (!("from_user_id" in event) || event.from_user_id !== (offer?.from_user_id || targetUserId)) return;
+          if ("conversation_id" in event && event.conversation_id !== (offer?.conversation_id || convId)) return;
 
-        setLocalStream(stream);
-        localStreamRef.current = stream; // Lưu vào ref để chống dependency loop
-
-        stream.getTracks().forEach((track) => {
-          try {
-            if ((pc.signalingState as string) !== "closed") {
-              pc.addTrack(track, stream);
+          if (event.event === "ice_candidate") {
+            const candidateData = event.data;
+            if (pc.remoteDescription) {
+              pc.addIceCandidate(new RTCIceCandidate(candidateData)).catch((e) => console.warn(e));
             } else {
-              track.stop();
+              candidateQueue.current.push(candidateData);
             }
-          } catch (err) {
-            console.warn("Bỏ qua addTrack do ngắt kết nối:", err);
-            track.stop();
+          }
+
+          if (event.event === "call_answer") {
+            try {
+              const answerSignal = event.data;
+              await pc.setRemoteDescription(new RTCSessionDescription(answerSignal));
+            
+              // Xả hàng đợi có kiểm tra trạng thái an toàn
+              candidateQueue.current.forEach((cand) => {
+                if (pcRef.current && pcRef.current.signalingState !== "closed") {
+                  pc.addIceCandidate(new RTCIceCandidate(cand)).catch((e) => console.warn(e));
+                }
+              });
+              candidateQueue.current = [];
+            } catch (e) {
+              console.error("Lỗi setRemoteDescription:", e);
+            }
           }
         });
 
-        const currentConvId = offer?.conversation_id || convId;
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-        if (offer) {
-          if ((pc.signalingState as string) === "closed") return;
-          await pc.setRemoteDescription(new RTCSessionDescription(offer.signal_data));
-
-          candidateQueue.current.forEach((cand) => {
-             if ((pc.signalingState as string) !== "closed") {
-               pc.addIceCandidate(new RTCIceCandidate(cand)).catch((e) => console.warn(e));
-             }
-          });
-          candidateQueue.current = [];
-
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          socket.send({
-            event: "call_answer",
-            data: {
-              to_user_id: offer.from_user_id,
-              conversation_id: currentConvId,
-              signal_data: answer,
-              call_id: offer.call_id,
-            },
-          } as any);
-          callResource.join(offer.call_id).catch(() => {});
-        } else if (targetUserId) {
-          const session = await callResource.start({
-            conversation_id: currentConvId as string,
-            call_type: "video",
-            participant_ids: [],
-          });
-          
-          if (!isStillMounted.current || !pcRef.current || pcRef.current.signalingState === "closed") {
+          if (disposed || !pcRef.current || (pcRef.current.signalingState as string) === "closed") {
             stream.getTracks().forEach((t) => t.stop());
             return;
           }
 
-          const off = await pc.createOffer();
-          await pc.setLocalDescription(off);
-          socket.send({
-            event: "call_offer",
-            data: {
-              call_id: session.id,
-              to_user_id: targetUserId,
-              conversation_id: currentConvId,
-              signal_data: off,
-              from_user_name: user?.full_name || "Người dùng",
-            },
-          } as any);
-        }
-      } catch (err) {
-        console.error("WebRTC Error:", err);
-        handleHangupRef.current(); // Gọi qua Ref để an toàn tuyệt đối
-      }
-      
-      return () => {
-        isStillMounted.current = false;
-        unsub();
-      };
-    }, [offer, targetUserId, convId, socket, user?.full_name]);
+          setLocalStream(stream);
+          localStreamRef.current = stream; // Lưu vào ref để chống dependency loop
 
-    useEffect(() => {
-      let cleanFn: any;
-      if (!offer || isAccepted) {
-        initWebRTC().then((fn) => (cleanFn = fn));
-      }
-      return () => {
-        if (cleanFn) cleanFn();
+          stream.getTracks().forEach((track) => {
+            try {
+              if ((pc.signalingState as string) !== "closed") {
+                pc.addTrack(track, stream);
+              } else {
+                track.stop();
+              }
+            } catch (err) {
+              console.warn("Bỏ qua addTrack do ngắt kết nối:", err);
+              track.stop();
+            }
+          });
+
+          const currentConvId = offer?.conversation_id || convId;
+
+          if (offer) {
+            if ((pc.signalingState as string) === "closed") return;
+            await pc.setRemoteDescription(new RTCSessionDescription(offer.signal_data));
+
+            candidateQueue.current.forEach((cand) => {
+               if ((pc.signalingState as string) !== "closed") {
+                 pc.addIceCandidate(new RTCIceCandidate(cand)).catch((e) => console.warn(e));
+               }
+            });
+            candidateQueue.current = [];
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.send({
+              event: "call_answer",
+              data: {
+                to_user_id: offer.from_user_id,
+                conversation_id: currentConvId || "",
+                signal_data: answer,
+                call_id: offer.call_id,
+              },
+            });
+            if (offer.call_id) callResource.join(offer.call_id).catch(() => {});
+          } else if (targetUserId) {
+            const session = await callResource.start({
+              conversation_id: currentConvId || "",
+              call_type: "video",
+              participant_ids: [],
+            });
+
+            if (disposed || !pcRef.current || pcRef.current.signalingState === "closed") {
+              stream.getTracks().forEach((t) => t.stop());
+              return;
+            }
+
+            const off = await pc.createOffer();
+            await pc.setLocalDescription(off);
+            socket.send({
+              event: "call_offer",
+              data: {
+                call_id: session.id,
+                to_user_id: targetUserId,
+                conversation_id: currentConvId || "",
+                signal_data: off,
+                from_user_name: callerName || "Người dùng",
+              },
+            });
+          }
+        } catch (err) {
+          console.error("WebRTC Error:", err);
+          if (!disposed) handleHangupRef.current();
+        }
+      
       };
-    }, [isAccepted, initWebRTC, offer]);
+      void initWebRTC();
+      return () => {
+        disposed = true;
+        unsubscribe?.();
+        cleanupResources();
+      };
+    }, [isAccepted, offer, targetUserId, convId, socket, callerName, cleanupResources]);
 
     useEffect(() => {
       if (localVideoRef.current && localStream) {

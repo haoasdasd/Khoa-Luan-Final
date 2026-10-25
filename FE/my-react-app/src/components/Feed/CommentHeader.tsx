@@ -1,5 +1,15 @@
 import type { ApiComment } from "@/types/api";
 
+interface CommentHeaderProps {
+comment: ApiComment;
+postAuthorId: string;
+isEditing: boolean;
+editValue: string;
+setEditValue: (value: string) => void;
+onUpdate: (id: string, content: string) => void;
+setIsEditing: (editing: boolean) => void;
+}
+
 export const CommentHeader = ({ 
   comment, 
   postAuthorId, 
@@ -8,7 +18,7 @@ export const CommentHeader = ({
   setEditValue, 
   onUpdate, 
   setIsEditing 
-}: any) => (
+}: CommentHeaderProps) => (
   <div className={`px-3 py-2 rounded-2xl border transition-all ${
     comment.parent_id ? "rounded-tl-2xl" : "rounded-tl-none"
   } ${

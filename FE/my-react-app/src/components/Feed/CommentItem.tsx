@@ -1,4 +1,6 @@
-import { useState, useRef, memo, useCallback } from "react";
+import type { ApiComment } from "@/types/api";
+
+import { useState, useRef, memo } from "react";
 import {
   MoreHorizontal,
   Edit2,
@@ -19,6 +21,17 @@ import { CommentActions } from "./CommentActions";
 import { UserAvatar } from "../common/UserAvatar";
 import { usersResource } from "@/api";
 
+interface CommentItemProps {
+  comment: ApiComment;
+  meId?: string;
+  postAuthorId: string;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, content: string) => void;
+  onReply: (id: string, content: string, mediaUrl?: string) => Promise<ApiComment | void>;
+  onReact: (id: string, type: string) => void;
+  onHide: (id: string) => void;
+}
+
 // ✅ Dùng memo để chặn re-render vô tận khi cha thay đổi
 export const CommentItem = memo(function CommentItem({
   comment,
@@ -29,7 +42,7 @@ export const CommentItem = memo(function CommentItem({
   onReply,
   onReact,
   onHide,
-}: any) {
+}: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -43,7 +56,7 @@ export const CommentItem = memo(function CommentItem({
   const replyFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingReply, setIsUploadingReply] = useState(false);
 
-  const [replies, setReplies] = useState<any[]>(comment.replies || []);
+  const [replies, setReplies] = useState<ApiComment[]>(comment.replies || []);
   const [showReplies, setShowReplies] = useState(false);
   const [isLoadingReplies, setIsLoadingReplies] = useState(false);
 
@@ -68,7 +81,7 @@ export const CommentItem = memo(function CommentItem({
     setIsLoadingReplies(true);
     try {
       const data = await usersResource.getCommentReplies(comment.id);
-      const finalData = Array.isArray(data) ? data : (data as any).data || [];
+      const finalData = data;
       setReplies(finalData);
       setShowReplies(true);
     } catch (error) {
@@ -110,7 +123,7 @@ export const CommentItem = memo(function CommentItem({
       } else {
         // Fallback: Fetch lại nếu onReply không trả về data
         const data = await usersResource.getCommentReplies(comment.id);
-        setReplies(Array.isArray(data) ? data : (data as any).data || []);
+        setReplies(data);
         setShowReplies(true);
       }
     } catch (error) {
@@ -282,7 +295,7 @@ export const CommentItem = memo(function CommentItem({
 
       {showReplies && replies.length > 0 && (
         <div className="ml-6 pl-6 border-l-2 border-slate-100 space-y-4 mt-2">
-          {replies.map((reply: any) => (
+          {replies.map((reply) => (
             <CommentItem
               key={reply.id}
               comment={reply}

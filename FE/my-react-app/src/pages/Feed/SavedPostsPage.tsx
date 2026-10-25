@@ -15,8 +15,7 @@ export default function SavedPostsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading,
-    isError
+    isLoading
   } = useInfiniteQuery({
     queryKey: ["saved-posts"],
     queryFn: ({ pageParam = 0 }) => 

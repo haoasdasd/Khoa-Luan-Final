@@ -44,7 +44,7 @@ export const commentsResource = {
     });
   },
 
-  react(commentId: string, payload: { type: string }): Promise<any> {
+  react(commentId: string, payload: { type: string }): Promise<ApiComment> {
     return authorizedFetch(`/comments/${commentId}/react`, {
       method: "POST",
       body: JSON.stringify(payload),

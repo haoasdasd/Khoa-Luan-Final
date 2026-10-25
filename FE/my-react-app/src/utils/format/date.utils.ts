@@ -13,7 +13,7 @@ export function formatRelative(iso: string): string {
       addSuffix: true, 
       locale: vi 
     });
-  } catch (error) {
+  } catch {
     return 'vừa xong';
   }
 }

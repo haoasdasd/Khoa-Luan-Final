@@ -3,9 +3,8 @@ import { useAuth } from "@/hooks/api/useAuth";
 import { useFeed } from "@/hooks/api/useFeed";
 import { postsResource } from "@/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getInitials, getAvatarGradient } from "@/utils/helpers/avatar.helpers";
 // Nhớ Import thêm Video và Film
-import { Image, Video, Film, Smile, Loader2, X, Send } from "lucide-react";
+import { Image, Film, Smile, Loader2, X, Send } from "lucide-react";
 import { toast } from "sonner";
 // 1. IMPORT THƯ VIỆN NÉN ẢNH
 import imageCompression from "browser-image-compression";

@@ -1,5 +1,7 @@
 "use client";
 
+import type { WsInboundEvent } from "@/api/ws.client";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { chatResource } from "@/api";
 import { useNavigate, useParams } from "react-router-dom";
@@ -45,51 +47,33 @@ export default function Sidebar() {
 
   // 3. Xử lý Socket Real-time
 useEffect(() => {
-    const handleSocket = (event: any) => {
-      const { event: eventName, data, conversation_id } = event;
-      const targetId = conversation_id || data?.conversation_id;
-
-      // 1. XỬ LÝ TIN NHẮN MỚI / SỬA / THU HỒI
-      if (["new_message", "message_edited", "message_deleted"].includes(eventName)) {
-        updateCache(targetId, (c) => ({
+    const handleSocket = (event: WsInboundEvent) => {
+      if (event.event === "new_message" || event.event === "message_edited") {
+        const { data, event: eventName } = event;
+        updateCache(data.conversation_id, (c) => ({
           ...c,
-          // Nếu là tin nhắn mới, cập nhật last_message và tăng count
-          // Nếu là edit/delete, cập nhật nội dung hiển thị ở Sidebar
-          last_message: eventName === "new_message" ? data : (
-            eventName === "message_deleted" 
-            ? { ...c.last_message, content: "Tin nhắn đã bị thu hồi", deleted_at: data.deleted_at }
-            : (String(c.last_message?.id) === String(data.id) ? data : c.last_message)
-          ),
-          unread_count: eventName === "new_message" && String(data.sender.id) !== String(me?.id) 
-                        ? (c.unread_count || 0) + 1 : c.unread_count,
-          updated_at: new Date().toISOString() 
+          last_message: eventName === "new_message" || c.last_message?.id === data.id ? data : c.last_message,
+          unread_count: eventName === "new_message" && data.sender.id !== me?.id ? (c.unread_count || 0) + 1 : c.unread_count,
+          updated_at: new Date().toISOString(),
         }));
-        
-        // CHỈ invalidate khi thực sự cần đồng bộ sâu, còn không thì updateCache ở trên là đủ hiện rồi
-        return;
-      }
-
-      // 2. REACTION & SEEN (Không fetch API, chỉ cập nhật trạng thái sắp xếp)
-      if (["message_reaction_updated", "messages_seen"].includes(eventName)) {
-        updateCache(targetId, (c) => ({ 
+      } else if (event.event === "message_deleted") {
+        const { data } = event;
+        updateCache(data.conversation_id, (c) => ({
           ...c, 
-          // Nếu là tin nhắn cuối bị Seen bởi mình, reset thông báo đỏ ngay
-          unread_count: (eventName === "messages_seen" && String(data.user_id) === String(me?.id)) ? 0 : c.unread_count,
-          updated_at: new Date().toISOString() 
+          last_message: c.last_message?.id === data.message_id ? { ...c.last_message, content: "Tin nhắn đã bị thu hồi", deleted_at: data.deleted_at } : c.last_message,
         }));
-        return;
-      }
-
-      // 3. TRẠNG THÁI ONLINE / OFFLINE (Giữ nguyên setQueryData trực tiếp)
-      if (eventName === "user_online" || eventName === "user_offline") {
-        const userId = data?.user_id || event.user_id;
-        queryClient.setQueryData(["conversations", "all"], (old: ApiConversation[] | undefined) => {
-          if (!old) return old;
-          return old.map(c => {
-            const isTarget = c.members?.some(m => String(m.user.id) === String(userId));
-            return isTarget && c.type === "private" ? { ...c, is_online: eventName === "user_online" } : c;
-          });
-        });
+      } else if (event.event === "message_seen" || event.event === "message_reaction_updated") {
+        const { data } = event;
+        updateCache(data.conversation_id, (c) => ({
+          ...c,
+          unread_count: "user_id" in data && data.user_id === me?.id ? 0 : c.unread_count,
+        }));
+      } else if (event.event === "user_online" || event.event === "user_offline") {
+        const isOnline = event.event === "user_online";
+        const userId = event.data.user_id;
+        queryClient.setQueryData<ApiConversation[]>(["conversations", "all"], (old) => old?.map(c =>
+          c.type === "private" && c.members.some(m => m.user.id === userId) ? { ...c, is_online: isOnline } : c
+        ));
       }
     };
 

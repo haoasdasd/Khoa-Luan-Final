@@ -4,7 +4,7 @@ import { useMemo, useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useChat } from "@/hooks/api/useChat";
 import { useAuth } from "@/hooks/api/useAuth";
-import { useCallSystem } from "@/context/CallContext";
+import { useCallSystem } from "@/context/call-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiMessage, ApiConversation } from "@/types/api";
 import Sidebar from "@/components/chat/Sidebar";
@@ -84,13 +84,13 @@ export default function ChatPage() {
   const targetUser = useMemo(() => {
     if (!conversation) return null;
     return conversation.members?.find(
-      (m: any) => String(m.user.id) !== String(user?.id),
+      (m) => String(m.user.id) !== String(user?.id),
     )?.user;
   }, [conversation, user?.id]);
 
   const myMemberInfo = useMemo(() => {
     return conversation?.members?.find(
-      (m: any) => String(m.user.id) === String(user?.id),
+      (m) => String(m.user.id) === String(user?.id),
     );
   }, [conversation, user?.id]);
 
@@ -100,14 +100,14 @@ export default function ChatPage() {
     if (!conversation) return false;
     if (conversation.type !== "group") return conversation.is_online;
     return conversation.members?.some(
-      (m: any) => String(m.user.id) !== String(user?.id) && m.user.is_online,
+      (m) => String(m.user.id) !== String(user?.id) && m.user.is_online,
     );
   }, [conversation, user?.id]);
 
   const typingUserFullName = useMemo(() => {
     if (!isPartnerTyping || typeof isPartnerTyping !== "object") return null;
     const member = conversation?.members?.find(
-      (m: any) => String(m.user.id) === String(isPartnerTyping.user_id),
+      (m) => String(m.user.id) === String(isPartnerTyping.user_id),
     );
     return member?.user?.full_name;
   }, [isPartnerTyping, conversation]);
@@ -144,7 +144,7 @@ export default function ChatPage() {
 
       // ✅ VÁ LỖI 2: Đảm bảo trùng khớp với Query Key lấy chi tiết phòng chat của Hào
       queryClient.invalidateQueries({ queryKey: ["conversations", convId] });
-    } catch (e) {
+    } catch {
       toast.error("Thao tác thất bại");
     }
   };
@@ -156,7 +156,7 @@ export default function ChatPage() {
       toast.success("Đã rời nhóm thành công");
       navigate("/chat");
       queryClient.invalidateQueries({ queryKey: ["conversations", "all"] });
-    } catch (e) {
+    } catch {
       toast.error("Không thể rời nhóm");
     }
   };
@@ -284,7 +284,7 @@ export default function ChatPage() {
                     )}
                     <button
                       onClick={() =>
-                        startCall(targetUser!.id, targetUser!.full_name, convId)
+                        targetUser && startCall(targetUser.id, targetUser.full_name || targetUser.username, convId)
                       }
                       className="p-2 md:p-2.5 hover:bg-slate-100 rounded-full text-slate-500"
                     >
@@ -292,7 +292,7 @@ export default function ChatPage() {
                     </button>
                     <button
                       onClick={() =>
-                        startCall(targetUser!.id, targetUser!.full_name, convId)
+                        targetUser && startCall(targetUser.id, targetUser.full_name || targetUser.username, convId)
                       }
                       className="p-2 md:p-2.5 hover:bg-slate-100 rounded-full text-slate-500"
                     >
@@ -416,7 +416,7 @@ export default function ChatPage() {
         onSelect={handleSelectUserToGroup}
         // ✅ VÁ LỖI: Chặn toàn bộ những người đã có sẵn trong phòng (Dù là group 5-10 người)
         excludeIds={
-          conversation?.members?.map((m: any) => String(m.user.id)) || [
+          conversation?.members?.map((m) => String(m.user.id)) || [
             String(user?.id),
           ]
         }

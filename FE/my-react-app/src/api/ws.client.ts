@@ -4,12 +4,14 @@
  */
 import env from "@/config/env.config";
 import { tokenService } from "@/services/token.service";
-import type { ApiMessage, MessageType } from "@/types/api";
+import type { ApiMessage, ApiMessageReaction, ApiNotification, MessageType } from "@/types/api";
 import { authResource } from "@/api/resources/auth.resource";
 import { ROUTES } from "@/config/routes.config";
 // ── Inbound event shapes (Dữ liệu từ Server gửi về) ──────────────────────────
 
 export type WsInboundEvent =
+  | { event: "new_notification"; data: ApiNotification }
+  | { event: "typing_stop"; data: { conversation_id: string; user_id: string } }
   | { event: "new_message"; data: ApiMessage; conversation_id: string }
   | {
       event: "typing";
@@ -28,7 +30,7 @@ export type WsInboundEvent =
   | { event: "user_offline"; data: { user_id: string; timestamp: string } }
   | {
       event: "message_reaction_updated";
-      data: { conversation_id: string; message_id: string; reactions: any[] };
+      data: { conversation_id: string; message_id: string; reactions: ApiMessageReaction[] };
     }
   | { event: "message_edited"; data: ApiMessage }
   | {
@@ -126,8 +128,8 @@ export class ChatSocketClient {
   private listeners = new Set<EventListener>();
   private closed = false;
   private retryDelay = 3_000;
-  private retryTimer: any = null;
-  private heartbeatTimer: any = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.connect();
@@ -176,6 +178,8 @@ export class ChatSocketClient {
   }
 
   public connect(): void {
+    if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    this.closed = false;
     const token = tokenService.getAccessToken();
     if (!token) {
       console.warn("[WS] No token found, skipping connection");
@@ -199,7 +203,7 @@ export class ChatSocketClient {
     this.ws.onmessage = (e: MessageEvent<string>) => {
       try {
         const data = JSON.parse(e.data) as WsInboundEvent;
-        if ((data.event as any) === "pong") return;
+        if (data.event === "pong") return;
         this.listeners.forEach((fn) => fn(data));
       } catch {
         /* malformed frame */

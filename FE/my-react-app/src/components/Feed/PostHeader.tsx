@@ -1,7 +1,20 @@
+
+
 import { MoreHorizontal, Bookmark, EyeOff, Trash2 } from "lucide-react";
 import { formatRelative } from "@/utils/format/date.utils";
 import { getInitials, getAvatarGradient } from "@/utils/helpers/avatar.helpers";
 import type { ApiPost } from "@/types/api";
+
+interface PostHeaderProps {
+  post: ApiPost;
+  isSharedChild: boolean;
+  showMenu: boolean;
+  setShowMenu: (show: boolean) => void;
+  onSave: () => void;
+  onHide: () => void;
+  onDelete: (id: string) => void;
+  meId?: string;
+}
 
 const UserAvatar = ({ author, size }: { author: ApiPost["author"], size: "sm" | "md" }) => {
   const sizeClass = size === "sm" ? "w-8 h-8 text-[10px]" : "w-10 h-10 text-xs";
@@ -28,7 +41,7 @@ export const PostHeader = ({
   onHide,
   onDelete,
   meId 
-}: any) => {
+}: PostHeaderProps) => {
   const isMyPost = String(post.author.id) === String(meId);
 
   return (

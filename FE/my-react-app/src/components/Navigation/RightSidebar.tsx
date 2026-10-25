@@ -1,5 +1,8 @@
 "use client";
 
+import type { WsInboundEvent } from "@/api/ws.client";
+import type { ApiUserPublic } from "@/types/api";
+
 import { useEffect } from "react";
 import { Settings, UserPlus, MessageSquare } from "lucide-react";
 import {
@@ -20,16 +23,17 @@ export function RightSidebar() {
   const queryClient = useQueryClient();
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  const { data: suggestedUsers, isLoading: loadingSuggest } =
+  const { data: suggestedUsers } =
     useSuggestedUsers();
-  const { data: connections, isLoading: loadingConn } = useUserConnections(
+  const { data: connections } = useUserConnections(
     me?.id,
   );
   const { follow, isProcessing } = useUserActions();
 
   // --- LOGIC SOCKET: Chỉ tập trung Online & Tin nhắn ---
   useEffect(() => {
-    const handleStatusEvent = (event: any) => {
+    const handleStatusEvent = (event: WsInboundEvent) => {
+      if (!("data" in event)) return;
       const { event: eventName, data } = event;
 
       if (eventName === "user_online" || eventName === "user_offline") {
@@ -37,11 +41,11 @@ export function RightSidebar() {
         const isOnline = eventName === "user_online";
 
         // Cập nhật danh sách liên hệ gợi ý trong RAM (React Query cache)
-        queryClient.setQueryData(["connections", me?.id], (old: any) => {
+        queryClient.setQueryData(["connections", me?.id], (old: { followers: ApiUserPublic[]; following: ApiUserPublic[] } | undefined) => {
           if (!old || !old.following) return old;
           return {
             ...old,
-            following: old.following.map((f: any) =>
+            following: old.following.map((f) =>
               String(f.id) === String(userId)
                 ? { ...f, is_online: isOnline }
                 : f,
@@ -69,7 +73,7 @@ export function RightSidebar() {
           Gợi ý
         </h3>
         <div className="space-y-4">
-          {suggestedUsers?.slice(0, 5).map((user: any) => (
+          {suggestedUsers?.slice(0, 5).map((user) => (
             <div
               key={user.id}
               className="flex items-center justify-between group"
@@ -104,8 +108,8 @@ export function RightSidebar() {
         </h3>
         <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
           {connections?.following
-            ?.sort((a: any, b: any) => (b.is_online ? 1 : -1))
-            .map((friend: any) => (
+            ?.slice().sort((a, b) => Number(!!b.is_online) - Number(!!a.is_online))
+            .map((friend) => (
               <div
                 key={friend.id}
                 className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-2xl"

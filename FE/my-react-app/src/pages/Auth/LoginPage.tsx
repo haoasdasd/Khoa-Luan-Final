@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useAuth } from "@/hooks/api/useAuth"
-import { useNavigate, Link } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { 
   Eye, EyeOff, Mail, Lock, Sparkles, 
   ChevronRight, ShieldCheck
 } from "lucide-react"
 import AuthLayout from "@/components/Auth/AuthLayout"
-import { useQueryClient } from "@tanstack/react-query";
 export default function LoginPage() {
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false); // Sửa lại state rememberMe nếu Hào cần bind vào UI
+  const [rememberMe] = useState(false); // Sửa lại state rememberMe nếu Hào cần bind vào UI
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
@@ -36,7 +33,7 @@ export default function LoginPage() {
     // 2. 🔥 VŨ KHÍ TỐI THƯỢNG: Ép trình duyệt chuyển trang và nạp lại toàn bộ state tươi nhất!
     window.location.replace("/");
 
-  } catch (error) {
+  } catch {
     alert("Đăng nhập thất bại. Hào vui lòng kiểm tra lại thông tin nhé!");
     setIsLoggingIn(false);
   }

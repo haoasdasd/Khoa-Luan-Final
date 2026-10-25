@@ -13,7 +13,7 @@ function formatRelativeTime(iso: string): string {
       : `${iso.replace(' ', 'T')}Z`;
     const date = parseISO(utcString);
     return formatDistanceToNow(date, { addSuffix: true, locale: vi });
-  } catch (error) {
+  } catch {
     return 'vừa xong';
   }
 }
@@ -25,7 +25,7 @@ function getDayLabel(iso: string): string {
     if (isToday(d)) return 'Hôm nay';
     if (isYesterday(d)) return 'Hôm qua';
     return format(d, 'dd/MM/yyyy', { locale: vi });
-  } catch (e) {
+  } catch {
     return '';
   }
 }
@@ -111,7 +111,7 @@ export function NotificationPopover() {
 }
 
 // --- Helpers: Tự động bắt từ khóa trong content để hiển thị Icon chuẩn ---
-const getTypeIcon = (type: string, content: any) => {
+const getTypeIcon = (type: string, content: string | null) => {
   const text = String(content || "").toLowerCase();
   
   if (type === 'like' || type === 'reaction') {
@@ -131,7 +131,7 @@ const getTypeIcon = (type: string, content: any) => {
   return <Bell size={10} fill="currentColor" />;
 };
 
-const getTypeStyles = (type: string, content: any) => {
+const getTypeStyles = (type: string, content: string | null) => {
   const text = String(content || "").toLowerCase();
   
   if (type === 'like' || type === 'reaction') {

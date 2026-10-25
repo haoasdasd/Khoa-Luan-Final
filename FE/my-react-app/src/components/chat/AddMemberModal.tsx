@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { chatResource } from "@/api";
 import { UserAvatar } from "@/components/common/UserAvatar";
-import { X, Search, Loader2, UserCheck, Check } from "lucide-react";
+import { X, Search, Loader2, Check } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/api/useAuth";
 import type { ApiUserPublic, ApiConversation } from "@/types/api";

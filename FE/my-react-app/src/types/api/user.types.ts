@@ -15,6 +15,7 @@ export interface ApiUser {
   is_active: boolean
   created_at: string
   updated_at: string | null
+  cover_url?: string | null
   deleted_at: string | null
 }
 
@@ -25,10 +26,12 @@ export interface ApiUserPublic {
   full_name: string | null
   avatar_url: string | null
   bio: string | null
+  is_online?: boolean
   mutual_count?: number
 }
 
 export interface ApiUpdateUserPayload {
+  cover_url?: string
   full_name?: string
   bio?: string
   avatar_url?: string

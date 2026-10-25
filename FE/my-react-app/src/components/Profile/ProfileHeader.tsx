@@ -1,9 +1,19 @@
+import type { ApiUser } from "@/types/api";
+
 import { useState, useRef } from "react";
 import { Camera, Check, Loader2 } from "lucide-react";
 import { UserAvatar } from "../common/UserAvatar";
 import { useToast } from "@/hooks/api/useToast";
 import { usersResource } from "@/api";
-import { useUserActions } from "@/hooks/api/useUser"; // Đảm bảo import đúng hook
+import { useUserActions } from "@/hooks/api/useUser";
+
+interface ProfileHeaderProps {
+  user: ApiUser;
+  isMe: boolean;
+  isFollowing: boolean;
+  onEditClick: () => void;
+  onRefresh: () => void;
+} // Đảm bảo import đúng hook
 
 export const ProfileHeader = ({
   user,
@@ -11,7 +21,7 @@ export const ProfileHeader = ({
   isFollowing,
   onEditClick,
   onRefresh,
-}: any) => {
+}: ProfileHeaderProps) => {
   const [isUploading, setIsUploading] = useState<"avatar" | "cover" | null>(
     null,
   );
@@ -71,7 +81,7 @@ export const ProfileHeader = ({
         "success",
       );
       onRefresh();
-    } catch (error) {
+    } catch {
       show("Không thể tải ảnh lên!", "error");
     } finally {
       setIsUploading(null);
@@ -89,7 +99,7 @@ export const ProfileHeader = ({
 
         // Block xong thì nên "tiễn khách" về trang chủ
         window.location.href = "/";
-      } catch (error) {
+      } catch {
         show("Lỗi khi chặn người dùng này!", "error");
       }
     }

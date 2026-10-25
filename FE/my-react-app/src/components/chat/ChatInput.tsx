@@ -28,6 +28,16 @@ export default function ChatInput({ sendMessage, sendTyping, replyingMessage, on
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 1. Hàm BẬT typing (Khi bấm vào hoặc gõ)
+const stopTyping = useCallback(() => {
+  if (typingTimeoutRef.current) {
+    clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = null;
+  }
+
+  isTypingRef.current = false;
+  sendTyping(false);
+}, [sendTyping]);
+
 const startTyping = useCallback(() => {
   // 1. Chỉ gửi start nếu chưa gửi
   if (!isTypingRef.current) {
@@ -43,31 +53,21 @@ const startTyping = useCallback(() => {
   typingTimeoutRef.current = setTimeout(() => {
     stopTyping();
   }, 1500); // 1.5 giây sau khi ngừng gõ mới tắt
-}, [sendTyping]);
-
-const stopTyping = useCallback(() => {
-  if (typingTimeoutRef.current) {
-    clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = null;
-  }
-
-  isTypingRef.current = false;
-  sendTyping(false);
-}, [sendTyping]);
+}, [sendTyping, stopTyping]);
 
   useEffect(() => {
     if (replyingMessage) {
       inputRef.current?.focus();
       startTyping(); // Bấm reply cũng tính là đang tương tác
     }
-  }, [replyingMessage]);
+  }, [replyingMessage, startTyping]);
 
   // Xử lý dọn dẹp khi chuyển phòng chat hoặc tắt component
   useEffect(() => {
     return () => {
       stopTyping();
     };
-  }, []);
+  }, [stopTyping]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -255,8 +255,4 @@ const stopTyping = useCallback(() => {
       </div>
     </div>
   );
-}
-
-function stopTyping() {
-  throw new Error("Function not implemented.");
 }

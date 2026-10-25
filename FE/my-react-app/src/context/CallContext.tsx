@@ -1,18 +1,19 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/api/useAuth";
-import { ChatSocketClient } from "@/api/ws.client";
+import { socketInstance } from "@/api/socket.instance";
 import { VideoCallModal, type CallSignalData } from "@/components/chat/VideoCallModal";
 
-const CallContext = createContext<any>(null);
+import { CallContext } from "./call-context";
+interface CallTarget { id: string; full_name: string; conversation_id: string; }
 
 export const CallProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   
   const [incomingOffer, setIncomingOffer] = useState<CallSignalData | null>(null);
-  const [callTarget, setCallTarget] = useState<any>(null);
+  const [callTarget, setCallTarget] = useState<CallTarget | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const socketRef = useRef<ChatSocketClient | null>(null);
+  const socket = socketInstance;
 
   // ✅ Quản lý 2 loại âm thanh riêng biệt
   const incomingRingRef = useRef<HTMLAudioElement | null>(null); // Chuông đổ khi có người gọi tới
@@ -24,6 +25,10 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
 
     outgoingRingRef.current = new Audio("/assets/sounds/ringback.mp3"); // Đổi file mp3 tút tút ở đây
     outgoingRingRef.current.loop = true;
+    return () => {
+      incomingRingRef.current?.pause();
+      outgoingRingRef.current?.pause();
+    };
   }, []);
 
   const playIncomingRing = useCallback(() => {
@@ -59,47 +64,44 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
     setCallTarget(null);
   }, [stopAllRingtones]);
 
+  const activePeerId = incomingOffer?.from_user_id || callTarget?.id;
+  const activeConversationId = incomingOffer?.conversation_id || callTarget?.conversation_id;
   useEffect(() => {
-    if (!user?.id) {
-       // 🛑 Dọn dẹp Socket nếu User đăng xuất
-       if (socketRef.current) {
-         socketRef.current.disconnect(); 
-         socketRef.current = null;
-       }
-       return;
-    }
-
-    if (!socketRef.current) {
-      socketRef.current = new ChatSocketClient();
-    }
-
-    const unsub = socketRef.current.on((event: any) => {
+    if (!user?.id) return;
+    const callSocket = socket;
+    callSocket.connect();
+    const unsub = callSocket.on((event) => {
       // 1. Máy nhận
       if (event.event === "call_offer") {
         playIncomingRing();
         setIncomingOffer({
-          call_id: event.call_id || event.data?.call_id,
+          call_id: event.call_id,
           from_user_id: event.from_user_id,
           from_user_name: event.from_user_name || "Người dùng",
           conversation_id: event.conversation_id,
-          signal_data: event.data?.signal_data || event.data,
+          signal_data: event.data,
         });
         setIsModalOpen(true);
       }
 
       // 2. Máy gọi nhận tín hiệu "Nhấc máy"
-      if (event.event === "call_answer") {
+      if (event.event === "call_answer" && event.from_user_id === activePeerId && event.conversation_id === activeConversationId) {
         stopAllRingtones();
       }
 
       // 3. Tín hiệu cúp máy/rớt mạng
-      if (["call_hangup", "call_rejected", "user_offline"].includes(event.event)) {
+      if (
+        ((event.event === "call_hangup" || event.event === "call_rejected") && event.from_user_id === activePeerId && event.conversation_id === activeConversationId) ||
+        (event.event === "user_offline" && event.data.user_id === activePeerId)
+      ) {
         handleEnd();
       }
     });
 
-    return () => unsub();
-  }, [user?.id, handleEnd, playIncomingRing, stopAllRingtones]);
+    return () => {
+      unsub();
+    };
+  }, [user?.id, handleEnd, playIncomingRing, stopAllRingtones, socket, activePeerId, activeConversationId]);
 
   const startCall = useCallback((targetId: string, name: string, convId: string) => {
     playOutgoingRing();
@@ -113,9 +115,9 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
       startCall,
       handleEndCall: handleEnd,
       stopAllRingtones, // ✅ Truyền hàm này xuống Modal để tắt chuông khi nhấn "Nghe"
-      callSocket: socketRef.current,
+      callSocket: socket,
     }),
-    [startCall, handleEnd, stopAllRingtones],
+    [startCall, handleEnd, stopAllRingtones, socket],
   );
 
   const MemoizedModal = useMemo(() => {
@@ -126,12 +128,12 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
         targetUserId={callTarget?.id}
         targetUserName={callTarget?.full_name}
         convId={callTarget?.conversation_id || incomingOffer?.conversation_id}
-        socket={socketRef.current}
+        socket={socket}
         onHangup={handleEnd}
         onAccept={stopAllRingtones} // ✅ Tắt chuông khi bắt đầu đàm thoại
       />
     );
-  }, [isModalOpen, incomingOffer, callTarget, handleEnd, stopAllRingtones]);
+  }, [isModalOpen, incomingOffer, callTarget, handleEnd, stopAllRingtones, socket]);
 
   return (
     <CallContext.Provider value={contextValue}>
@@ -139,11 +141,4 @@ export const CallProvider = ({ children }: { children: React.ReactNode }) => {
       {MemoizedModal}
     </CallContext.Provider>
   );
-};
-
-export const useCallSystem = () => {
-  const context = useContext(CallContext);
-  if (!context)
-    throw new Error("useCallSystem must be used within CallProvider");
-  return context;
 };

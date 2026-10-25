@@ -11,7 +11,8 @@ export type PostVisibility = 'public' | 'friends' | 'private'
 export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry'
 
 export interface ApiPost {
-  [x: string]: any;
+  is_locked?: boolean;
+  deleted_at?: string | null;
   id: string;
   content: string | null;
   media_url: string | null;
@@ -30,6 +31,8 @@ export interface ApiPost {
   top_reactions: string[];
 }
 export interface ApiComment {
+  user_id?: string;
+  deleted_at?: string | null;
   id: string;
   post_id: string;
   parent_id: string | null;
@@ -69,4 +72,11 @@ export interface ApiCreateCommentPayload {
   content: string
   parent_id?: string
   media_url?: string;
+}export interface ApiHiddenItem {
+  id: string;
+  target_id: string;
+  target_type: "post" | "comment";
+  created_at: string;
+  post_data: ApiPost | null;
+  comment_data: ApiComment | null;
 }

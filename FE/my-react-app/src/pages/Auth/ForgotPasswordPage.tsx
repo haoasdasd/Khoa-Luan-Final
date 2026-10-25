@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { 
   Mail, ArrowLeft, Send, Lock, 
-  KeyRound, Eye, EyeOff, CheckCircle2, Sparkles, ShieldCheck, ChevronRight 
+  KeyRound, Eye, EyeOff, CheckCircle2, Sparkles, ChevronRight
 } from "lucide-react"
 import AuthLayout from "@/components/Auth/AuthLayout"
 import { useAuth } from "@/hooks/api/useAuth" 
@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email) 
       setStep('VERIFY_RESET')
-    } catch (error) {
+    } catch {
       alert("Email không tồn tại hoặc có lỗi xảy ra!")
     } finally {
       setIsLocalLoading(false)
@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
         new_password: newPassword
       })
       setStep('SUCCESS')
-    } catch (error) {
+    } catch {
       alert("Mã OTP không chính xác hoặc đã hết hạn!")
     } finally {
       setIsLocalLoading(false)

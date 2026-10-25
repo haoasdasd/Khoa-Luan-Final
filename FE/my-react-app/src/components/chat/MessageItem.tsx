@@ -22,7 +22,7 @@ import {
 interface ExtendedMessage extends ApiMessage {
   isSending?: boolean;
   isError?: boolean;
-  thumbnail_url?: any;
+  thumbnail_url?: string;
 }
 
 interface MessageItemProps {
@@ -54,15 +54,15 @@ export function MessageItem({
   const [isHighlighted, setIsHighlighted] = useState(false);
 
   useEffect(() => {
-    const handleHighlight = (e: any) => {
+    const handleHighlight = (e: CustomEvent<{ messageId: string }>) => {
       if (e.detail?.messageId === message.id) {
         setIsHighlighted(true);
         setTimeout(() => setIsHighlighted(false), 2000);
       }
     };
-    window.addEventListener("highlight-message", handleHighlight);
+    window.addEventListener("highlight-message", handleHighlight as EventListener);
     return () =>
-      window.removeEventListener("highlight-message", handleHighlight);
+      window.removeEventListener("highlight-message", handleHighlight as EventListener);
   }, [message.id]);
 
   const mediaList = useMemo(() => {
@@ -72,16 +72,10 @@ export function MessageItem({
 
   const isRevoked = !!message.deleted_at;
 
-  const myReaction = useMemo(() => {
-    return message.reactions?.find(
-      (r: any) => String(r.user_id) === String(currentUserId),
-    );
-  }, [message.reactions, currentUserId]);
-
   // Đảm bảo reactionCounts tính toán lại khi message.reactions thay đổi
   const reactionCounts = useMemo(() => {
     if (!message.reactions) return {};
-    return message.reactions.reduce((acc: any, r: any) => {
+    return message.reactions.reduce<Record<string, number>>((acc, r) => {
       const label = r.reaction.toLowerCase();
       acc[label] = (acc[label] || 0) + 1;
       return acc;

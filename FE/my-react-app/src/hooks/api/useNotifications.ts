@@ -27,7 +27,7 @@ export function useNotifications() {
 
   useEffect(() => {
   // Hàm .on() tự trả về một hàm hủy lắng nghe khi thực thi
-  const unsubscribe = socketInstance.on((payload: any) => {
+  const unsubscribe = socketInstance.on((payload) => {
     if (payload.event === "new_notification") {
       const newNotif = payload.data as ApiNotification;
       setNotifications(prev => [newNotif, ...prev]);

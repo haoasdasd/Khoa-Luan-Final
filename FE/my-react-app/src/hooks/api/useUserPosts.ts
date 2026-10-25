@@ -1,5 +1,5 @@
 // hooks/api/useUserPosts.ts
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { postsResource } from '@/api' // Đảm bảo trong api/posts.ts có hàm getUserPosts
 import type { ApiPost } from '@/types/api'
 
@@ -17,7 +17,7 @@ export function useUserPosts(userId: string | undefined): UseUserPostsResult {
   const [posts, setPosts] = useState<ApiPost[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
-  const [offset, setOffset] = useState(0)
+  const offsetRef = useRef(0)
 
   const fetchProfilePosts = useCallback(async (isReset: boolean = false) => {
     if (!userId) return
@@ -28,7 +28,7 @@ export function useUserPosts(userId: string | undefined): UseUserPostsResult {
     }
 
     try {
-      const currentOffset = isReset ? 0 : offset
+      const currentOffset = isReset ? 0 : offsetRef.current
       
       // SỬA Ở ĐÂY: Gọi đúng endpoint lấy bài của riêng User này
       // Endpoint này ở Backend sẽ KHÔNG lọc 8h
@@ -39,18 +39,18 @@ export function useUserPosts(userId: string | undefined): UseUserPostsResult {
 
       setPosts(prev => isReset ? data : [...prev, ...data])
       setHasMore(data.length === PAGE_SIZE)
-      setOffset(currentOffset + data.length)
+      offsetRef.current = currentOffset + data.length
     } catch (error) {
       console.error("Lỗi lấy bài viết profile:", error)
     } finally {
       setLoading(false)
     }
-  }, [userId, offset])
+  }, [userId])
 
   // Lắng nghe sự thay đổi của userId để tải lại trang
   useEffect(() => { 
     fetchProfilePosts(true) 
-  }, [userId]) 
+  }, [fetchProfilePosts])
 
   const loadMore = useCallback(() => {
     if (loading || !hasMore) return

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bell, Search, Menu, LogOut, User, Settings } from "lucide-react";
+import { Bell, Search, LogOut, User, Settings } from "lucide-react";
 import { useNotifications } from "@/hooks/api/useNotifications";
 import { NotificationPopover } from "./NotificationPopover";
 import { UserAvatar } from "../common/UserAvatar";

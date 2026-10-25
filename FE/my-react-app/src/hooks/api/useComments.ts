@@ -117,7 +117,7 @@ export function useComments(postId: string, isEnabled: boolean = false) {
     },
 
     // Bước 2: Nếu Server báo lỗi (ví dụ rớt mạng)
-    onError: (err, newComment, context) => {
+    onError: (err, _newComment, context) => {
       // Khôi phục lại danh sách cũ, xóa cái comment "giả" đi
       if (context?.previousComments) {
         queryClient.setQueryData(
@@ -230,7 +230,7 @@ const hideCommentMutation = useMutation({
   return {
     comments,
     isLoading,
-    addComment: addCommentMutation.mutate,
+    addComment: addCommentMutation.mutateAsync,
     deleteComment: deleteCommentMutation.mutate,
     hideComment: hideCommentMutation.mutate,
     updateComment: updateCommentMutation.mutate,

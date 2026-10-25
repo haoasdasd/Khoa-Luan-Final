@@ -1,8 +1,10 @@
 "use client";
 
+import type { ChatMessage } from "@/types/chat";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { chatResource } from "@/api";
-import type { ApiMessage, ApiConversation } from "@/types/api/chat.types";
+import type { ApiConversation } from "@/types/api/chat.types";
 import { socketInstance } from "@/api/socket.instance";
 import { useAuth } from "./useAuth";
 
@@ -18,7 +20,7 @@ type TypingState =
     };
 
 interface UseChatReturn {
-  messages: ApiMessage[];
+  messages: ChatMessage[];
   conversation: ApiConversation | null;
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -48,7 +50,7 @@ interface UseChatReturn {
 export function useChat(convId: string | undefined): UseChatReturn {
   const { user } = useAuth();
 
-  const [messages, setMessages] = useState<ApiMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversation, setConversation] = useState<ApiConversation | null>(
     null,
   );
@@ -159,9 +161,10 @@ export function useChat(convId: string | undefined): UseChatReturn {
   useEffect(() => {
     if (!convId || convId === "undefined") return;
 
-    const unsubscribe = socketInstance.on((event: any) => {
+    const unsubscribe = socketInstance.on((event) => {
+      if (!("data" in event)) return;
       const { event: eventName, data: eventData } = event;
-      const eventUserId = eventData?.user_id || event.user_id;
+      const eventUserId = "user_id" in eventData ? eventData.user_id : undefined;
 
       if (eventName === "user_online" || eventName === "user_offline") {
         const isOnline = eventName === "user_online";
@@ -189,7 +192,7 @@ export function useChat(convId: string | undefined): UseChatReturn {
       }
 
       const eventConvId = String(
-        event.conversation_id || eventData?.conversation_id || "",
+        ("conversation_id" in event ? event.conversation_id : undefined) || ("conversation_id" in eventData ? eventData.conversation_id : ""),
       );
       if (eventConvId !== String(convIdRef.current)) return;
 
@@ -198,7 +201,7 @@ export function useChat(convId: string | undefined): UseChatReturn {
           setMessages((prev) => {
             if (prev.some((m) => m.id === eventData.id)) return prev;
             const filtered = prev.filter(
-              (m) => !((m as any).isSending && m.content === eventData.content),
+              (m) => !(m.isSending && m.content === eventData.content),
             );
             return [...filtered, eventData];
           });
@@ -219,8 +222,8 @@ export function useChat(convId: string | undefined): UseChatReturn {
         }
 
         case "message_seen": {
-          const seenUserId = eventData?.user_id || event.user_id;
-          const seenAt = eventData?.seen_at || event.seen_at;
+          const seenUserId = eventData.user_id;
+          const seenAt = eventData.seen_at;
 
           setMessages((prev) =>
             prev.map((m) => {
@@ -370,12 +373,16 @@ export function useChat(convId: string | undefined): UseChatReturn {
       if (!convId || !user) return;
 
       const tempId = `temp-${Date.now()}`;
-      const optimisticMsg: any = {
+      const optimisticMsg: ChatMessage = {
+        conversation_id: convId,
+        status: "sent",
+        edited_at: null,
+        deleted_at: null,
         id: tempId,
         content: content.trim(),
         media_url: files
           ? files.map((f) => URL.createObjectURL(f)).join(",")
-          : undefined,
+          : null,
         message_type: files?.[0]?.type.startsWith("video")
           ? "video"
           : files && files.length > 0
@@ -414,7 +421,7 @@ export function useChat(convId: string | undefined): UseChatReturn {
             message_type: optimisticMsg.message_type,
           },
         });
-      } catch (error) {
+      } catch {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === tempId ? { ...m, isSending: false, isError: true } : m,
@@ -463,7 +470,7 @@ export function useChat(convId: string | undefined): UseChatReturn {
     );
     try {
       await chatResource.reactMessage(messageId, type);
-    } catch (error) {
+    } catch {
       setMessages(previousMessages);
     }
   };

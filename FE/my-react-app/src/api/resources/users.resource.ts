@@ -5,6 +5,7 @@
 import { authorizedFetch } from "@/api/interceptors/auth.interceptor";
 import type {
   ApiUser,
+  ApiComment,
   ApiUserPublic,
   ApiUpdateUserPayload,
   ApiUserProfileResponse,
@@ -50,7 +51,7 @@ export const usersResource = {
     return authorizedFetch(`/users/${userId}/following`);
   },
 
-  suggestions(): Promise<any[]> {
+  suggestions(): Promise<ApiUserPublic[]> {
     return authorizedFetch("/users/suggestions");
   },
 
@@ -60,7 +61,7 @@ export const usersResource = {
   getBlockedList(): Promise<ApiUserPublic[]> {
     return authorizedFetch("/users/me/blocked");
   },
-  getCommentReplies(commentId: string): Promise<any[]> {
+  getCommentReplies(commentId: string): Promise<ApiComment[]> {
     return authorizedFetch(`/comments/${commentId}/replies`);
   },
 

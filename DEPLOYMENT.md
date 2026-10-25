@@ -1,5 +1,14 @@
 # Deploy frontend to Vercel and API/PostgreSQL to Render
 
+## Current deployment
+
+- Frontend: https://khoa-luan-final.vercel.app
+- API: https://khoa-luan-api.onrender.com
+- Render service: `khoa-luan-api`, PostgreSQL: `khoa-luan-db` (Singapore, free plans).
+- Both projects are connected to this GitHub repository's `main` branch for automatic deployment.
+- Email, AI and authenticated backend media uploads need your integration credentials.
+  Registration works without an avatar.
+
 ## 1. Render
 
 Create a Blueprint from `https://github.com/haoasdasd/Khoa-Luan-Final`, branch

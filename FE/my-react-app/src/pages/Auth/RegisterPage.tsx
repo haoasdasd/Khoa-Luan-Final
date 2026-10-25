@@ -48,18 +48,15 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Kiểm tra xem Hào đã chọn ảnh chưa
-    if (!avatarFile) {
-      alert("Hào ơi, vui lòng chọn một tấm ảnh đại diện nhé!")
-      return
-    }
-
     setIsLoading(true)
     try {
-      // BƯỚC 1: Tải ảnh lên Cloudinary lấy Link thực
-      setIsUploadingImg(true)
-      const finalAvatarUrl = await uploadImageToCloudinary(avatarFile)
-      setIsUploadingImg(false)
+      // Avatar uploads are optional so registration does not require Cloudinary.
+      let finalAvatarUrl = ""
+      if (avatarFile) {
+        setIsUploadingImg(true)
+        finalAvatarUrl = await uploadImageToCloudinary(avatarFile)
+        setIsUploadingImg(false)
+      }
 
       // BƯỚC 2: Gửi toàn bộ data (kèm link ảnh vừa lấy được) về Backend
       await register({
